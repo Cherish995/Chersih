@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cherish.mm.dao.QuestionDao">
+    <sql id="select_question">
+        <if test="queryParams != null">
+            <if test="queryParams.courseId != null">
+                and courseId = #{queryParams.courseId}
+            </if>
+            <if test="queryParams.difficulty != null">
+                and difficulty = #{queryParams.difficulty}
+            </if>
+            <if test="queryParams.type != null">
+                and type = #{queryParams.type}
+            </if>
+            <if test="queryParams.keyWord != null">
+                and subject like "%"#{queryParams.keyWord}"%"
+            </if>
+        </if>
+    </sql>
+    <select id="findCount" parameterType="int" resultType="long">
+        select count(*) from t_question where courseId =#{id}
+    </select>
+    <select id="list" parameterType="queryPageBean" resultType="Question">
+        select
+        id,
+        (10000+id) number,
+        (select name from t_course where id = tq.courseId) courseName,
+        tq.createDate,
+        (select username from t_user where id = tq.userId) creator,
+        tq.difficulty,
+        tq.status,
+        tq.subject,
+        tq.type,
+        (select count(*) from tr_member_question where questionId = tq.id)+"" usedQty
+        from t_question tq
+        where isClassic = 0
+        <include refid="select_question"></include>
+        limit #{offset},#{pageSize}
+    </select>
+    <select id="findTotal" parameterType="queryPageBean" resultType="long">
+        select
+        count(*)
+        from t_question tq
+        where isClassic = 0
+        <include refid="select_question"></include>
+    </select>
+    <insert id="add" parameterType="Question">
+        <selectKey keyProperty="id" keyColumn="id" order="AFTER" resultType="int">
+            select last_insert_id()
+        </selectKey>
+        insert into
+        t_question
+        (subject,difficulty,analysis,analysisVideo,remark,isClassic,type,
+        status,reviewStatus,createDate,userId,companyId,catalogId,courseId)
+        values (#{subject},#{difficulty},#{analysis},#{analysisVideo},
+          #{remark},#{is_classic},#{type},#{status},#{reviewStatus},#{createDate},
+          #{userId},#{companyId},#{catalogId},#{courseId}
+        )
+    </insert>
+</mapper>
